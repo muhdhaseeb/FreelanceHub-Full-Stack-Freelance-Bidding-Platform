@@ -1,0 +1,13 @@
+import api from './axios';
+export const adminLogin    = (data)       => api.post('/admin/login', data);
+export const getStats      = ()           => api.get('/admin/stats');
+export const getUsers      = (params)     => api.get('/admin/users', { params });
+export const getUserDetail = (id)         => api.get(`/admin/users/${id}`);
+export const banUser       = (id, reason) => api.patch(`/admin/users/${id}/ban`, { reason });
+export const unbanUser     = (id)         => api.patch(`/admin/users/${id}/unban`);
+export const deleteUser    = (id)         => api.delete(`/admin/users/${id}`);
+export const getJobs       = (params)     => api.get('/admin/jobs', { params });
+export const cancelJob     = (id, reason) => api.patch(`/admin/jobs/${id}/cancel`, { reason });
+export const getPayments   = (params)     => api.get('/admin/payments', { params });
+export const getReviews    = (params)     => api.get('/admin/reviews', { params });
+export const deleteReview  = (id)         => api.delete(`/admin/reviews/${id}`);
