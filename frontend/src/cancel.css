@@ -1,0 +1,24 @@
+/* ── Danger Button ───────────────────────────────────────── */
+.btn--danger {
+  background: var(--red-dim);
+  color: var(--red);
+  border: 1px solid rgba(239,68,68,0.3);
+  font-weight: 600;
+}
+.btn--danger:hover { background: rgba(239,68,68,0.25); border-color: var(--red); }
+.btn--danger:disabled { opacity: 0.5; cursor: not-allowed; }
+
+/* ── Cancel Contract Modal ───────────────────────────────── */
+.cancel-warning {
+  background: rgba(239,68,68,0.08);
+  border: 1px solid rgba(239,68,68,0.25);
+  border-radius: var(--radius-sm);
+  padding: 1rem;
+  margin-bottom: 1.25rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+}
+
+.cancel-warning p { font-size: 0.875rem; color: var(--text-secondary); }
+.cancel-refund-note { color: var(--green) !important; font-weight: 600; }
