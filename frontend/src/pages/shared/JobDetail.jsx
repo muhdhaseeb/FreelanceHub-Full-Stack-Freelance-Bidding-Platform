@@ -3,7 +3,7 @@ import { useParams, useNavigate, Link } from "react-router-dom";
 import { loadStripe } from "@stripe/stripe-js";
 import { Elements } from "@stripe/react-stripe-js";
 import { useAuth } from "../../context/AuthContext";
-import { getJob, markJobComplete } from "../../api/jobs";
+import { getJob, markJobComplete, withdrawJob } from "../../api/jobs";
 import { submitBid, acceptBid, rejectBid, cancelContract } from "../../api/bids";
 import { getMessages } from "../../api/messages";
 import { submitReview } from "../../api/reviews";
@@ -45,6 +45,10 @@ export default function JobDetail() {
   const [showCancelModal, setShowCancelModal] = useState(false);
   const [cancelReason, setCancelReason] = useState("");
   const [cancelLoading, setCancelLoading] = useState(false);
+
+  // Withdraw modal
+  const [showWithdrawModal, setShowWithdrawModal] = useState(false);
+  const [withdrawLoading, setWithdrawLoading] = useState(false);
 
   // Review modal
   const [showReviewModal, setShowReviewModal] = useState(false);
@@ -105,7 +109,6 @@ export default function JobDetail() {
     finally { setActionLoading(false); }
   };
 
-  // ── NEW: Reject a bid ───────────────────────────────────────────────────────
   const handleRejectBid = async (bidId, freelancerName) => {
     if (!window.confirm(`Reject bid from ${freelancerName}? They will be notified.`)) return;
     setActionLoading(true); setActionError("");
@@ -116,7 +119,6 @@ export default function JobDetail() {
     finally { setActionLoading(false); }
   };
 
-  // ── NEW: Cancel contract ────────────────────────────────────────────────────
   const handleCancelContract = async (e) => {
     e.preventDefault();
     if (!cancelReason.trim()) return;
@@ -129,6 +131,18 @@ export default function JobDetail() {
       alert("Contract cancelled. Job is now open for new bids.");
     } catch (err) { setActionError(err.response?.data?.message || "Failed to cancel contract"); }
     finally { setCancelLoading(false); }
+  };
+
+  // ── Withdraw Job ────────────────────────────────────────────────────────────
+  const handleWithdraw = async () => {
+    setWithdrawLoading(true);
+    try {
+      await withdrawJob(id);
+      setShowWithdrawModal(false);
+      fetchJob();
+      alert("Job withdrawn. All pending bids have been rejected and freelancers notified.");
+    } catch (err) { setActionError(err.response?.data?.message || "Failed to withdraw job"); }
+    finally { setWithdrawLoading(false); }
   };
 
   const handlePaymentSuccess = () => {
@@ -185,6 +199,7 @@ export default function JobDetail() {
 
   const canBid = user.role === "freelancer" && job.status === "open" && !isClient;
   const canReview = isClient && job.status === "completed" && !reviewSubmitted;
+  const canWithdraw = isClient && job.status === "open";
 
   return (
     <div className="job-detail">
@@ -203,9 +218,14 @@ export default function JobDetail() {
           {isAssignedFreelancer && job.status === "in-progress" && (
             <button className="btn btn--success" onClick={handleMarkComplete} disabled={actionLoading}>Mark Complete</button>
           )}
-          {/* Cancel Contract button — only for client when job is in-progress */}
           {isClient && job.status === "in-progress" && (
             <button className="btn btn--danger" onClick={() => setShowCancelModal(true)}>Cancel Contract</button>
+          )}
+          {/* Withdraw Job — only for open jobs owned by client */}
+          {canWithdraw && (
+            <button className="btn btn--danger" onClick={() => setShowWithdrawModal(true)} disabled={actionLoading}>
+              Withdraw Job
+            </button>
           )}
           {canReview && <button className="btn btn--primary" onClick={() => setShowReviewModal(true)}>⭐ Leave Review</button>}
         </div>
@@ -250,7 +270,6 @@ export default function JobDetail() {
                     <span className={"status-badge status-badge--" + bid.status}>{bid.status}</span>
                   </div>
                   <p className="bid-proposal">{bid.proposal}</p>
-                  {/* Action buttons only for pending bids on open jobs */}
                   {bid.status === "pending" && job.status === "open" && (
                     <div style={{ display: "flex", gap: "0.5rem" }}>
                       <button className="btn btn--primary btn--sm" onClick={() => handleAcceptBid(bid)} disabled={actionLoading}>
@@ -337,6 +356,31 @@ export default function JobDetail() {
         </div>
       )}
 
+      {/* Withdraw Modal */}
+      {showWithdrawModal && (
+        <div className="modal-overlay" onClick={() => setShowWithdrawModal(false)}>
+          <div className="modal" onClick={(e) => e.stopPropagation()}>
+            <div className="modal-header">
+              <h2>⚠️ Withdraw Job</h2>
+              <button className="modal-close" onClick={() => setShowWithdrawModal(false)}>✕</button>
+            </div>
+            <div className="modal-form">
+              <div className="cancel-warning">
+                <p>⚠️ This will permanently withdraw this job posting.</p>
+                <p>All pending bids will be rejected and freelancers will be notified.</p>
+                <p>This action cannot be undone.</p>
+              </div>
+            </div>
+            <div className="modal-actions">
+              <button className="btn btn--ghost" onClick={() => setShowWithdrawModal(false)}>Keep Job</button>
+              <button className="btn btn--danger" onClick={handleWithdraw} disabled={withdrawLoading}>
+                {withdrawLoading ? "Withdrawing..." : "Confirm Withdraw"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Cancel Contract Modal */}
       {showCancelModal && (
         <div className="modal-overlay" onClick={() => setShowCancelModal(false)}>
@@ -353,14 +397,8 @@ export default function JobDetail() {
               </div>
               <div className="form-group">
                 <label>Reason for cancellation *</label>
-                <textarea
-                  value={cancelReason}
-                  onChange={(e) => setCancelReason(e.target.value)}
-                  placeholder="e.g. The freelancer is not responsive, work quality does not match requirements, goals have changed..."
-                  rows={4}
-                  required
-                  minLength={10}
-                />
+                <textarea value={cancelReason} onChange={(e) => setCancelReason(e.target.value)}
+                  placeholder="e.g. The freelancer is not responsive..." rows={4} required minLength={10} />
               </div>
               <div className="modal-actions">
                 <button type="button" className="btn btn--ghost" onClick={() => setShowCancelModal(false)}>Keep Contract</button>

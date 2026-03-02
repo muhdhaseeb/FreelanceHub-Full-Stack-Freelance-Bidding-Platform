@@ -11,7 +11,7 @@ const jobSchema = new mongoose.Schema({
   deadline: { type: Date, required: true },
   clientId: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true, index: true },
   assignedFreelancerId: { type: mongoose.Schema.Types.ObjectId, ref: 'User', default: null },
-  status: { type: String, enum: ['open', 'in-progress', 'completed'], default: 'open' },
+  status: { type: String, enum: ['open', 'in-progress', 'completed', 'cancelled'], default: 'open' },
   category: { type: String, default: 'General' },
   tags: [{ type: String, trim: true }],
   createdAt: { type: Date, default: Date.now, index: true },

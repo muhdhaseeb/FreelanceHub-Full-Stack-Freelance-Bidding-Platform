@@ -35,11 +35,16 @@ export default function Login() {
             <input type="email" value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })} placeholder="you@example.com" required />
           </div>
           <div className="form-group">
-            <label>Password</label>
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+              <label>Password</label>
+            </div>
             <input type="password" value={form.password} onChange={(e) => setForm({ ...form, password: e.target.value })} placeholder="••••••••" required />
           </div>
           <button type="submit" className="btn btn--primary btn--full" disabled={loading}>{loading ? "Signing in..." : "Sign in"}</button>
         </form>
+        <p style={{ textAlign: "center", marginTop: "1rem", fontSize: "0.875rem" }}>
+          <Link to="/forgot-password" style={{ color: "var(--text-muted)" }}>Forgot password?</Link>
+        </p>
         <p className="auth-footer">No account? <Link to="/register">Create one</Link></p>
       </div>
     </div>

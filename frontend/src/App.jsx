@@ -9,6 +9,8 @@ import JobDetail from "./pages/shared/JobDetail";
 import ProfilePage from "./pages/shared/ProfilePage";
 import CreateJob from "./pages/client/CreateJob";
 import MyBids from "./pages/freelancer/MyBids";
+import ForgotPassword from "./pages/auth/ForgotPassword";
+import ResetPassword from "./pages/auth/ResetPassword";
 import "./index.css";
 
 const ProtectedRoute = ({ children }) => {
@@ -33,16 +35,21 @@ function AppRoutes() {
   return (
     <Routes>
       <Route path="/" element={<Navigate to="/dashboard" replace />} />
-      <Route path="/login" element={<PublicRoute><Login /></PublicRoute>} />
-      <Route path="/register" element={<PublicRoute><Register /></PublicRoute>} />
+
+      <Route path="/login"           element={<PublicRoute><Login /></PublicRoute>} />
+      <Route path="/register"        element={<PublicRoute><Register /></PublicRoute>} />
+      <Route path="/forgot-password" element={<PublicRoute><ForgotPassword /></PublicRoute>} />
+      <Route path="/reset-password"  element={<PublicRoute><ResetPassword /></PublicRoute>} />
+
       <Route path="/" element={<ProtectedRoute><Layout /></ProtectedRoute>}>
-        <Route path="dashboard" element={<Dashboard />} />
-        <Route path="jobs" element={<JobsPage />} />
-        <Route path="jobs/create" element={<RoleRoute role="client"><CreateJob /></RoleRoute>} />
-        <Route path="jobs/:id" element={<JobDetail />} />
-        <Route path="profile/:id" element={<ProfilePage />} />
-        <Route path="my-bids" element={<RoleRoute role="freelancer"><MyBids /></RoleRoute>} />
+      <Route path="dashboard"   element={<Dashboard />} />
+      <Route path="jobs"        element={<JobsPage />} />
+      <Route path="jobs/create" element={<RoleRoute role="client"><CreateJob /></RoleRoute>} />
+      <Route path="jobs/:id"    element={<JobDetail />} />
+      <Route path="profile/:id" element={<ProfilePage />} />
+      <Route path="my-bids"     element={<RoleRoute role="freelancer"><MyBids /></RoleRoute>} />
       </Route>
+
       <Route path="*" element={<Navigate to="/dashboard" replace />} />
     </Routes>
   );
