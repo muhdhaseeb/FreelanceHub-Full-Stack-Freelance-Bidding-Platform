@@ -227,31 +227,14 @@ GMAIL_APP_PASSWORD=
         ├── context/    # AuthContext
         └── pages/      # Dashboard, Users, Jobs, Payments, Reviews
 ```
-
----
-
-## Interview Talking Points
-
-**"Walk me through the payment flow."**  
-The client accepts a bid which triggers a server-side Stripe PaymentIntent creation. The frontend receives only the `client_secret` and renders the Stripe Elements card form. On submission, Stripe.js handles card tokenization — raw card data never touches my server. After the user submits, the frontend calls my `/confirm` endpoint which re-fetches the PaymentIntent status directly from Stripe's API to verify success before updating the database. The freelancer's payment is released only when the client explicitly approves the completed work.
-
-**"How do you handle authorization?"**  
-JWT verification and ban checking happen in a single `protect` middleware applied to all protected routes. Role restrictions are layered on top per-route using `restrictTo()`. Admin routes use a completely separate middleware that additionally checks `role === 'admin'`. This means a regular user token is rejected by admin routes even if it's otherwise valid.
-
-**"How does the real-time chat work?"**  
-Socket.IO with room-based messaging scoped to job IDs. When a user tries to join a room, the server queries the database to verify they are either the client or the assigned freelancer on that job. Authorization is re-verified on every message send — not just on initial connection — so a user who loses their role mid-session cannot continue sending messages.
-
-**"What would you improve with more time?"**  
-MongoDB transactions for multi-document writes like bid acceptance — currently three sequential writes that could leave inconsistent state if one fails. Stripe Connect for actual payouts to freelancers instead of just tracking release in the database. Redis adapter for Socket.IO to support horizontal scaling. BullMQ for background jobs like stale job expiry and async notification dispatch.
-
 ---
 
 ## Test Credentials
 
 | Role | Email | Password |
 |------|-------|----------|
-| Client | client@test.com | test123 |
-| Freelancer | freelancer@test.com | test123 |
+| Client | client@client.com | client123 |
+| Freelancer | test@test.com | test123 |
 | Admin | admin@freelance.com | Admin@123456 |
 
 Stripe test card: `4242 4242 4242 4242` · any future expiry · any CVC
