@@ -2,6 +2,7 @@ import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { AuthProvider, useAuth } from "./context/AuthContext";
 import Layout from "./components/layout/Layout";
 import Login from "./pages/auth/Login";
+import Earnings from "./pages/freelancer/Earnings";
 import Register from "./pages/auth/Register";
 import Dashboard from "./pages/shared/Dashboard";
 import JobsPage from "./pages/shared/JobsPage";
@@ -51,7 +52,8 @@ function AppRoutes() {
       <Route path="jobs/:id/edit" element={<RoleRoute role="client"><EditJob /></RoleRoute>} />
       <Route path="settings" element={<AccountSettings />} />
       <Route path="profile/:id" element={<ProfilePage />} />
-      <Route path="my-bids"     element={<RoleRoute role="freelancer"><MyBids /></RoleRoute>} />
+      <Route path="earnings" element={<RoleRoute role="freelancer"><Earnings /></RoleRoute>} />
+      <Route path="my-bids" element={<RoleRoute role="freelancer"><MyBids /></RoleRoute>} />
       </Route>
 
       <Route path="*" element={<Navigate to="/dashboard" replace />} />

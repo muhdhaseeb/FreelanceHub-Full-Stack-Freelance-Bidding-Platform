@@ -23,6 +23,7 @@ export default function Layout() {
           <Link to="/jobs">Browse Jobs</Link>
           {user?.role === "client" && <Link to="/jobs/create">Post Job</Link>}
           {user?.role === "freelancer" && <Link to="/my-bids">My Bids</Link>}
+          {user?.role === "freelancer" && <Link to="/earnings">Earnings</Link>}
           <Link to="/dashboard">Dashboard</Link>
         </div>
         <div className="nav-user">
