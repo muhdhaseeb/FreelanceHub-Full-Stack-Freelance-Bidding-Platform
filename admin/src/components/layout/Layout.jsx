@@ -2,11 +2,12 @@ import { NavLink, Outlet, useNavigate } from "react-router-dom";
 import { useAuth } from "../../context/AuthContext";
 
 const navItems = [
-  { to: "/", icon: "📊", label: "Dashboard" },
-  { to: "/users", icon: "👥", label: "Users" },
-  { to: "/jobs", icon: "📋", label: "Jobs" },
+  { to: "/",         icon: "📊", label: "Dashboard" },
+  { to: "/users",    icon: "👥", label: "Users" },
+  { to: "/jobs",     icon: "📋", label: "Jobs" },
   { to: "/payments", icon: "💳", label: "Payments" },
-  { to: "/reviews", icon: "⭐", label: "Reviews" },
+  { to: "/reviews",  icon: "⭐", label: "Reviews" },
+  { to: "/analytics",icon: "📈", label: "Analytics" },
 ];
 
 export default function Layout() {

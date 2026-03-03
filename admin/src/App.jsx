@@ -7,6 +7,7 @@ import Users     from "./pages/Users";
 import Jobs      from "./pages/Jobs";
 import Payments  from "./pages/Payments";
 import Reviews   from "./pages/Reviews";
+import Analytics from "./pages/Analytics";
 import "./index.css";
 
 const Protected = ({ children }) => {
@@ -27,10 +28,11 @@ function AppRoutes() {
       <Route path="/login" element={<Public><Login /></Public>} />
       <Route path="/" element={<Protected><Layout /></Protected>}>
         <Route index element={<Dashboard />} />
-        <Route path="users"    element={<Users />} />
-        <Route path="jobs"     element={<Jobs />} />
-        <Route path="payments" element={<Payments />} />
-        <Route path="reviews"  element={<Reviews />} />
+        <Route path="users"     element={<Users />} />
+        <Route path="jobs"      element={<Jobs />} />
+        <Route path="payments"  element={<Payments />} />
+        <Route path="reviews"   element={<Reviews />} />
+        <Route path="analytics" element={<Analytics />} />
       </Route>
       <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>

@@ -53,6 +53,7 @@ app.use('/api/reviews',       require('./routes/reviewRoutes'));
 app.use('/api/notifications', require('./routes/notificationRoutes'));
 app.use('/api/payments',      require('./routes/paymentRoutes'));
 app.use('/api/admin',         require('./routes/adminRoutes'));
+app.use('/api/analytics',     require('./routes/analyticsRoutes'));
 
 app.get('/api/health', (req, res) => {
   res.json({ status: 'ok', uptime: process.uptime(), timestamp: new Date() });
