@@ -19,7 +19,6 @@ export default function NotificationBell() {
 
   useEffect(() => { fetchNotifications(); }, [fetchNotifications]);
 
-  // Real-time notification handler
   useNotificationSocket(useCallback((notification) => {
     setNotifications(prev => [notification, ...prev]);
     setUnreadCount(prev => prev + 1);
@@ -32,6 +31,15 @@ export default function NotificationBell() {
       setUnreadCount(0);
       setNotifications(prev => prev.map(n => ({ ...n, read: true })));
     }
+  };
+
+  const handleMarkAllRead = async (e) => {
+    e.stopPropagation();
+    try {
+      await markAllRead();
+      setUnreadCount(0);
+      setNotifications(prev => prev.map(n => ({ ...n, read: true })));
+    } catch (err) {}
   };
 
   const handleClick = (n) => {
@@ -54,7 +62,11 @@ export default function NotificationBell() {
         <div className="notification-dropdown">
           <div className="notification-header">
             <span>Notifications</span>
-            {notifications.length > 0 && <button onClick={() => { markAllRead(); setUnreadCount(0); }} className="mark-read-btn">Mark all read</button>}
+            {unreadCount > 0 && (
+              <button onClick={handleMarkAllRead} className="mark-read-btn">
+                Mark all read
+              </button>
+            )}
           </div>
           <div className="notification-list">
             {notifications.length === 0 && <div className="notification-empty">No notifications yet</div>}
