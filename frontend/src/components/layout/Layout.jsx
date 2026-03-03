@@ -12,8 +12,12 @@ export default function Layout() {
     <div className="app-shell">
       <nav className="navbar">
         <Link to="/dashboard" className="nav-brand">
-          <span className="brand-icon">⬡</span>
-          <span>FreeLance</span>
+          <img
+            src="/logo192.png"
+            alt="FreelanceHub"
+            style={{ width: "32px", height: "32px", borderRadius: "6px", objectFit: "cover" }}
+          />
+          <span>FreelanceHub</span>
         </Link>
         <div className="nav-links">
           <Link to="/jobs">Browse Jobs</Link>

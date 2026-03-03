@@ -19,9 +19,13 @@ export default function Layout() {
     <div className="admin-shell">
       <aside className="sidebar">
         <div className="sidebar-brand">
-          <span className="brand-icon">⬡</span>
+          <img
+            src="/logo192.png"
+            alt="FreelanceHub"
+            style={{ width: "36px", height: "36px", borderRadius: "8px", objectFit: "cover", flexShrink: 0 }}
+          />
           <div>
-            <div className="brand-text">FreeLance</div>
+            <div className="brand-text">FreelanceHub</div>
             <div className="brand-sub">Admin</div>
           </div>
         </div>

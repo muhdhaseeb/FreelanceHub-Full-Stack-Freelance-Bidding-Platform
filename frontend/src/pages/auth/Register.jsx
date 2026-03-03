@@ -24,7 +24,11 @@ export default function Register() {
     <div className="auth-page">
       <div className="auth-card">
         <div className="auth-header">
-          <span className="auth-logo">⬡</span>
+          <img
+            src="/logo192.png"
+            alt="FreelanceHub"
+            style={{ width: "56px", height: "56px", borderRadius: "12px", objectFit: "cover", margin: "0 auto 0.75rem", display: "block" }}
+          />
           <h1>Create account</h1>
           <p>Join the platform today</p>
         </div>

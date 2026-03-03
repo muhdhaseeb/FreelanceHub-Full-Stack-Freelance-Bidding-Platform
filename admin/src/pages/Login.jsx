@@ -24,9 +24,13 @@ export default function Login() {
   return (
     <div className="auth-page">
       <div className="auth-card">
-        <span className="auth-logo">⬡</span>
+        <img
+          src="/logo192.png"
+          alt="FreelanceHub"
+          style={{ width: "56px", height: "56px", borderRadius: "12px", objectFit: "cover", margin: "0 auto 0.75rem", display: "block" }}
+        />
         <h1>Admin Panel</h1>
-        <p className="auth-sub">FreeLance Platform Administration</p>
+        <p className="auth-sub">FreelanceHub Platform Administration</p>
         {error && <div className="alert alert-error">{error}</div>}
         <form onSubmit={handleSubmit}>
           <div className="form-group">
