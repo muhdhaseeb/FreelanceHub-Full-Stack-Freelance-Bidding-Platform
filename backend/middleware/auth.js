@@ -18,10 +18,9 @@ const protect = async (req, res, next) => {
     }
 
     const user = await User.findById(decoded.id).select('-password');
-    if (!user)
+    if (!user || user.isDeleted)
       return res.status(401).json({ success: false, message: 'User no longer exists.' });
 
-    // Ban check — blocked users cannot use any protected route
     if (user.isBanned) {
       return res.status(403).json({
         success: false,

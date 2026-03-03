@@ -221,6 +221,11 @@ export default function JobDetail() {
           {isClient && job.status === "in-progress" && (
             <button className="btn btn--danger" onClick={() => setShowCancelModal(true)}>Cancel Contract</button>
           )}
+          {isClient && job.status === "open" && (
+            <button className="btn btn--ghost" onClick={() => navigate(`/jobs/${job._id}/edit`)}>
+              ✏️ Edit Job
+            </button>
+          )}
           {/* Withdraw Job — only for open jobs owned by client */}
           {canWithdraw && (
             <button className="btn btn--danger" onClick={() => setShowWithdrawModal(true)} disabled={actionLoading}>

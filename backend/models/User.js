@@ -7,14 +7,12 @@ const userSchema = new mongoose.Schema({
   password: { type: String, required: true, minlength: 6, select: false },
   role:     { type: String, enum: ['client', 'freelancer', 'admin'], required: true },
 
-  // Profile
   bio:            { type: String, maxlength: 500, default: '' },
   skills:         [{ type: String, trim: true }],
   portfolio:      [{ title: String, url: String, description: String }],
   profilePicture: { type: String, default: '' },
   location:       { type: String, default: '' },
 
-  // Ratings
   avgRating:    { type: Number, default: 0 },
   totalReviews: { type: Number, default: 0 },
 
@@ -23,6 +21,10 @@ const userSchema = new mongoose.Schema({
   bannedAt:  { type: Date },
   bannedBy:  { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
   banReason: { type: String, default: '' },
+
+  // Soft delete
+  isDeleted:  { type: Boolean, default: false },
+  deletedAt:  { type: Date },
 
   createdAt: { type: Date, default: Date.now },
 });

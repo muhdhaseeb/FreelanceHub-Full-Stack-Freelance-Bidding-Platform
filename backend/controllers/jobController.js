@@ -72,6 +72,36 @@ exports.getJob = async (req, res, next) => {
   } catch (err) { next(err); }
 };
 
+// ── NEW: Edit Job ─────────────────────────────────────────────────────────────
+exports.editJob = async (req, res, next) => {
+  try {
+    const job = await Job.findById(req.params.id);
+    if (!job) return res.status(404).json({ success: false, message: 'Job not found.' });
+    if (String(job.clientId) !== String(req.user._id))
+      return res.status(403).json({ success: false, message: 'Not authorized.' });
+    if (job.status !== 'open')
+      return res.status(400).json({ success: false, message: `Cannot edit a "${job.status}" job. Only open jobs can be edited.` });
+
+    const { title, description, budgetMin, budgetMax, deadline, category, tags } = req.body;
+
+    if (title)       job.title       = title;
+    if (description) job.description = description;
+    if (budgetMin)   job.budgetMin   = Number(budgetMin);
+    if (budgetMax)   job.budgetMax   = Number(budgetMax);
+    if (deadline)    job.deadline    = new Date(deadline);
+    if (category)    job.category    = category;
+    if (tags)        job.tags        = tags;
+
+    // Validate budget
+    if (job.budgetMax < job.budgetMin)
+      return res.status(400).json({ success: false, message: 'Max budget must be greater than min budget.' });
+
+    await job.save();
+    logger.info({ msg: 'Job edited', jobId: job._id, clientId: req.user._id });
+    res.json({ success: true, message: 'Job updated successfully.', job });
+  } catch (err) { next(err); }
+};
+
 exports.markJobComplete = async (req, res, next) => {
   try {
     const job = await Job.findById(req.params.id);
@@ -96,37 +126,26 @@ exports.markJobComplete = async (req, res, next) => {
   } catch (err) { next(err); }
 };
 
-// ── NEW: Withdraw Job ─────────────────────────────────────────────────────────
 exports.withdrawJob = async (req, res, next) => {
   try {
     const job = await Job.findById(req.params.id);
     if (!job) return res.status(404).json({ success: false, message: 'Job not found.' });
-
-    // Only the client who owns the job can withdraw it
     if (String(job.clientId) !== String(req.user._id))
       return res.status(403).json({ success: false, message: 'Not authorized.' });
-
-    // Can only withdraw open jobs
     if (job.status !== 'open')
-      return res.status(400).json({ success: false, message: `Cannot withdraw a "${job.status}" job. Only open jobs can be withdrawn.` });
+      return res.status(400).json({ success: false, message: `Cannot withdraw a "${job.status}" job.` });
 
-    // Find all pending bids before changing status
-    const pendingBids = await Bid.find({ jobId: job._id, status: 'pending' })
-      .populate('freelancerId', 'name');
+    const pendingBids = await Bid.find({ jobId: job._id, status: 'pending' }).populate('freelancerId', 'name');
 
-    // Withdraw the job
     job.status = 'cancelled';
     await job.save();
 
-    // Reject all pending bids
     await Bid.updateMany({ jobId: job._id, status: 'pending' }, { status: 'rejected' });
 
-    // Notify all freelancers who had pending bids
     const io = req.app.get('io');
     for (const bid of pendingBids) {
       const notification = await Notification.create({
-        userId: bid.freelancerId._id,
-        type: 'bid_rejected',
+        userId: bid.freelancerId._id, type: 'bid_rejected',
         message: `The job "${job.title}" has been withdrawn by the client.`,
         jobId: job._id,
       });

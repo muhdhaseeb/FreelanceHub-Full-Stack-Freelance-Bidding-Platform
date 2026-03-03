@@ -33,6 +33,7 @@ export default function Layout() {
               : <div className="avatar-placeholder">{user?.name?.[0]?.toUpperCase()}</div>
             }
           </Link>
+          <Link to="/settings" className="btn btn--ghost btn--sm">Settings</Link>
           <span className={"role-badge role-badge--" + user?.role}>{user?.role}</span>
           <button onClick={handleLogout} className="btn btn--ghost btn--sm">Logout</button>
         </div>

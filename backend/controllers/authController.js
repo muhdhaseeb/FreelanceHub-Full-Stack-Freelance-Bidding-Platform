@@ -8,8 +8,6 @@ const signToken = (id) => jwt.sign({ id }, process.env.JWT_SECRET, {
   expiresIn: process.env.JWT_EXPIRES_IN || '7d',
 });
 
-// In-memory store for reset tokens (use Redis in production)
-// Map: hashedToken -> { userId, expiresAt }
 const resetTokenStore = new Map();
 
 exports.register = async (req, res, next) => {
@@ -37,7 +35,7 @@ exports.login = async (req, res, next) => {
     if (!email || !password)
       return res.status(400).json({ success: false, message: 'Email and password required.' });
 
-    const user = await User.findOne({ email: email.toLowerCase() }).select('+password');
+    const user = await User.findOne({ email: email.toLowerCase(), isDeleted: { $ne: true } }).select('+password');
     if (!user || !(await user.comparePassword(password))) {
       logger.warn({ msg: 'Failed login attempt', email });
       return res.status(401).json({ success: false, message: 'Invalid credentials.' });
@@ -57,6 +55,27 @@ exports.getMe = async (req, res, next) => {
   } catch (err) { next(err); }
 };
 
+// ── Delete Account (soft delete) ──────────────────────────────────────────────
+exports.deleteAccount = async (req, res, next) => {
+  try {
+    const { password } = req.body;
+    if (!password)
+      return res.status(400).json({ success: false, message: 'Password is required to delete your account.' });
+
+    const user = await User.findById(req.user._id).select('+password');
+    if (!await user.comparePassword(password))
+      return res.status(401).json({ success: false, message: 'Incorrect password.' });
+
+    user.isDeleted = true;
+    user.deletedAt = new Date();
+    user.email     = `deleted_${Date.now()}_${user.email}`; // free up the email
+    await user.save();
+
+    logger.info({ msg: 'Account deleted', userId: user._id });
+    res.json({ success: true, message: 'Your account has been deleted.' });
+  } catch (err) { next(err); }
+};
+
 // ── Password Reset ─────────────────────────────────────────────────────────────
 exports.forgotPassword = async (req, res, next) => {
   try {
@@ -64,22 +83,17 @@ exports.forgotPassword = async (req, res, next) => {
     if (!email)
       return res.status(400).json({ success: false, message: 'Email is required.' });
 
-    // Always respond the same way — do not reveal if email exists
-    const user = await User.findOne({ email: email.toLowerCase() });
-    if (!user) {
+    const user = await User.findOne({ email: email.toLowerCase(), isDeleted: { $ne: true } });
+    if (!user)
       return res.json({ success: true, message: 'If that email is registered, a reset link has been sent.' });
-    }
 
-    // Generate a secure random token
-    const token    = crypto.randomBytes(32).toString('hex');
-    const hash     = crypto.createHash('sha256').update(token).digest('hex');
-    const expiresAt = Date.now() + 60 * 60 * 1000; // 1 hour
+    const token     = crypto.randomBytes(32).toString('hex');
+    const hash      = crypto.createHash('sha256').update(token).digest('hex');
+    const expiresAt = Date.now() + 60 * 60 * 1000;
 
-    // Store hashed token (in production: use Redis with TTL)
     resetTokenStore.set(hash, { userId: String(user._id), expiresAt });
 
     const resetUrl = `${process.env.CLIENT_URL}/reset-password?token=${token}`;
-
     await sendPasswordReset({ to: user.email, name: user.name, resetUrl });
 
     logger.info({ msg: 'Password reset email sent', userId: user._id });
@@ -104,13 +118,10 @@ exports.resetPassword = async (req, res, next) => {
     }
 
     const user = await User.findById(record.userId);
-    if (!user)
-      return res.status(404).json({ success: false, message: 'User not found.' });
+    if (!user) return res.status(404).json({ success: false, message: 'User not found.' });
 
-    user.password = newPassword; // pre-save hook hashes it
+    user.password = newPassword;
     await user.save();
-
-    // Invalidate token immediately after use
     resetTokenStore.delete(hash);
 
     logger.info({ msg: 'Password reset successful', userId: user._id });

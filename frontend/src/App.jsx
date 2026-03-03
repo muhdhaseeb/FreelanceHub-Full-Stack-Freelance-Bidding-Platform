@@ -11,6 +11,8 @@ import CreateJob from "./pages/client/CreateJob";
 import MyBids from "./pages/freelancer/MyBids";
 import ForgotPassword from "./pages/auth/ForgotPassword";
 import ResetPassword from "./pages/auth/ResetPassword";
+import EditJob from "./pages/client/EditJob";
+import AccountSettings from "./pages/shared/AccountSettings";
 import "./index.css";
 
 const ProtectedRoute = ({ children }) => {
@@ -46,6 +48,8 @@ function AppRoutes() {
       <Route path="jobs"        element={<JobsPage />} />
       <Route path="jobs/create" element={<RoleRoute role="client"><CreateJob /></RoleRoute>} />
       <Route path="jobs/:id"    element={<JobDetail />} />
+      <Route path="jobs/:id/edit" element={<RoleRoute role="client"><EditJob /></RoleRoute>} />
+      <Route path="settings" element={<AccountSettings />} />
       <Route path="profile/:id" element={<ProfilePage />} />
       <Route path="my-bids"     element={<RoleRoute role="freelancer"><MyBids /></RoleRoute>} />
       </Route>
