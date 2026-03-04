@@ -1,4 +1,3 @@
-
 const User    = require('../models/User');
 const Job     = require('../models/Job');
 const Bid     = require('../models/Bid');
@@ -48,11 +47,16 @@ exports.getAnalytics = async (req, res, next) => {
     users.forEach(u => { const b = userBuckets.find(b => b.date === toKey(u.createdAt)); if (b) b.count++; });
     jobs.forEach(j => { const b = jobBuckets.find(b => b.date === toKey(j.createdAt)); if (b) b.count++; });
     bids.forEach(b => { const bk = bidBuckets.find(bk => bk.date === toKey(b.createdAt)); if (bk) bk.count++; });
-    payments.forEach(p => { const b = revenueBuckets.find(b => b.date === toKey(p.createdAt)); if (b) { b.count++; b.amount += p.amount; } });
+
+    // Amounts stored in dollars — no division needed
+    payments.forEach(p => {
+      const b = revenueBuckets.find(b => b.date === toKey(p.createdAt));
+      if (b) { b.count++; b.amount += p.amount; }
+    });
 
     const format = (buckets, valueKey) => buckets.map(b => ({
       label: formatLabel(b.date, days),
-      value: valueKey === 'amount' ? parseFloat((b.amount / 100).toFixed(2)) : b.count,
+      value: valueKey === 'amount' ? parseFloat(b.amount.toFixed(2)) : b.count,
     }));
 
     const totalRevenue = payments.reduce((sum, p) => sum + p.amount, 0);
@@ -64,7 +68,7 @@ exports.getAnalytics = async (req, res, next) => {
         newUsers:  users.length,
         newJobs:   jobs.length,
         newBids:   bids.length,
-        revenue:   parseFloat((totalRevenue / 100).toFixed(2)),
+        revenue:   parseFloat(totalRevenue.toFixed(2)),
       },
       charts: {
         revenue: format(revenueBuckets, 'amount'),

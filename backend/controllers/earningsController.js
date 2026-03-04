@@ -1,4 +1,3 @@
-
 const Payment = require('../models/Payment');
 const Bid     = require('../models/Bid');
 const Job     = require('../models/Job');
@@ -31,20 +30,17 @@ exports.getEarnings = async (req, res, next) => {
     since.setDate(since.getDate() - days);
     since.setHours(0, 0, 0, 0);
 
-    // All released payments for this freelancer
-    const [allPayments, recentPayments, pendingPayments, allBids, completedJobs] = await Promise.all([
+    const [allPayments, recentPayments, pendingPayments, completedJobs] = await Promise.all([
       Payment.find({ freelancerId, status: 'released' }, 'amount createdAt'),
       Payment.find({ freelancerId, status: 'released', createdAt: { $gte: since } }, 'amount createdAt'),
       Payment.find({ freelancerId, status: 'paid' }, 'amount'),
-      Bid.find({ freelancerId }, 'status'),
       Job.countDocuments({ assignedFreelancerId: freelancerId, status: 'completed' }),
     ]);
 
-    // Total earned all time
-    const totalEarned = allPayments.reduce((sum, p) => sum + p.amount, 0);
-
-    // Pending (in escrow)
+    // Amounts are stored in dollars — no division needed
+    const totalEarned   = allPayments.reduce((sum, p) => sum + p.amount, 0);
     const pendingAmount = pendingPayments.reduce((sum, p) => sum + p.amount, 0);
+    const periodEarned  = recentPayments.reduce((sum, p) => sum + p.amount, 0);
 
     // Earnings chart
     const buckets = generateBuckets(days);
@@ -56,7 +52,7 @@ exports.getEarnings = async (req, res, next) => {
 
     const chart = buckets.map(b => ({
       label: formatLabel(b.date, days),
-      value: parseFloat((b.amount / 100).toFixed(2)),
+      value: parseFloat(b.amount.toFixed(2)),
     }));
 
     // Recent earnings list
@@ -68,15 +64,15 @@ exports.getEarnings = async (req, res, next) => {
     res.json({
       success: true,
       summary: {
-        totalEarned:    parseFloat((totalEarned / 100).toFixed(2)),
-        pendingAmount:  parseFloat((pendingAmount / 100).toFixed(2)),
-        jobsCompleted:  completedJobs,
-        periodEarned:   parseFloat((recentPayments.reduce((s, p) => s + p.amount, 0) / 100).toFixed(2)),
+        totalEarned:   parseFloat(totalEarned.toFixed(2)),
+        pendingAmount: parseFloat(pendingAmount.toFixed(2)),
+        jobsCompleted: completedJobs,
+        periodEarned:  parseFloat(periodEarned.toFixed(2)),
       },
       chart,
       recentPayments: recentList.map(p => ({
         _id:       p._id,
-        amount:    parseFloat((p.amount / 100).toFixed(2)),
+        amount:    parseFloat(p.amount.toFixed(2)),
         jobTitle:  p.jobId?.title || 'Unknown Job',
         jobId:     p.jobId?._id,
         createdAt: p.createdAt,
