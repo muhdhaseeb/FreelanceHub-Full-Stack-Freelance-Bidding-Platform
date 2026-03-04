@@ -8,6 +8,7 @@ import Jobs      from "./pages/Jobs";
 import Payments  from "./pages/Payments";
 import Reviews   from "./pages/Reviews";
 import Analytics from "./pages/Analytics";
+import Disputes  from "./pages/Disputes";
 import "./index.css";
 
 const Protected = ({ children }) => {
@@ -33,6 +34,7 @@ function AppRoutes() {
         <Route path="payments"  element={<Payments />} />
         <Route path="reviews"   element={<Reviews />} />
         <Route path="analytics" element={<Analytics />} />
+        <Route path="disputes"  element={<Disputes />} />
       </Route>
       <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>

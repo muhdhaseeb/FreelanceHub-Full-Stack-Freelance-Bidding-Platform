@@ -9,6 +9,7 @@ import { getMessages } from "../../api/messages";
 import { submitReview } from "../../api/reviews";
 import { createPaymentIntent, getPaymentForJob, releasePayment } from "../../api/payments";
 import { useSocket } from "../../hooks/useSocket";
+import { raiseDispute, getDispute } from "../../api/disputes";
 import StarRating from "../../components/common/StarRating";
 import PaymentForm from "../../components/common/PaymentForm";
 import PaymentStatus from "../../components/common/PaymentStatus";
@@ -50,6 +51,11 @@ export default function JobDetail() {
   const [showWithdrawModal, setShowWithdrawModal] = useState(false);
   const [withdrawLoading, setWithdrawLoading] = useState(false);
 
+  const [showDisputeModal, setShowDisputeModal] = useState(false);
+  const [disputeReason, setDisputeReason] = useState("");
+  const [disputeLoading, setDisputeLoading] = useState(false);
+  const [dispute, setDispute] = useState(null);
+
   // Review modal
   const [showReviewModal, setShowReviewModal] = useState(false);
   const [reviewForm, setReviewForm] = useState({ rating: 0, comment: "" });
@@ -83,13 +89,15 @@ export default function JobDetail() {
   const fetchJob = async () => {
     setLoading(true);
     try {
-      const [jobRes, paymentRes] = await Promise.all([
+      const [jobRes, paymentRes, disputeRes] = await Promise.all([
         getJob(id),
         getPaymentForJob(id).catch(() => ({ data: { payment: null } })),
+        getDispute(id).catch(() => ({ data: { dispute: null } })),
       ]);
       setJob(jobRes.data.job);
       setBids(jobRes.data.bids || []);
       setPayment(paymentRes.data.payment);
+      setDispute(disputeRes.data.dispute);
     } catch (err) { setError("Failed to load job"); }
     finally { setLoading(false); }
   };
@@ -143,6 +151,19 @@ export default function JobDetail() {
       alert("Job withdrawn. All pending bids have been rejected and freelancers notified.");
     } catch (err) { setActionError(err.response?.data?.message || "Failed to withdraw job"); }
     finally { setWithdrawLoading(false); }
+  };
+
+  const handleRaiseDispute = async (e) => {
+    e.preventDefault();
+    if (!disputeReason.trim()) return;
+    setDisputeLoading(true);
+    try {
+      await raiseDispute(id, { reason: disputeReason });
+      setShowDisputeModal(false); setDisputeReason("");
+      fetchJob();
+      alert("Dispute raised. An admin will review it shortly.");
+    } catch (err) { setActionError(err.response?.data?.message || "Failed to raise dispute"); }
+    finally { setDisputeLoading(false); }
   };
 
   const handlePaymentSuccess = () => {
@@ -200,6 +221,8 @@ export default function JobDetail() {
   const canBid = user.role === "freelancer" && job.status === "open" && !isClient;
   const canReview = isClient && job.status === "completed" && !reviewSubmitted;
   const canWithdraw = isClient && job.status === "open";
+  const canDispute = (isClient || isAssignedFreelancer) && job.status === "in-progress" && !dispute;
+  const hasOpenDispute = dispute && dispute.status === "open";
 
   return (
     <div className="job-detail">
@@ -211,6 +234,7 @@ export default function JobDetail() {
             <span className={"status-badge status-badge--" + job.status}>{job.status}</span>
             <span className="text-muted">by <Link to={`/profile/${job.clientId?._id}`}>{job.clientId?.name}</Link></span>
             <span className="text-muted">Deadline: {new Date(job.deadline).toLocaleDateString()}</span>
+            {hasOpenDispute && <span className="status-badge" style={{ background: "rgba(245,158,11,0.15)", color: "#f59e0b" }}>Dispute Open</span>}
           </div>
         </div>
         <div style={{ display: "flex", gap: "0.5rem", flexWrap: "wrap" }}>
@@ -223,7 +247,7 @@ export default function JobDetail() {
           )}
           {isClient && job.status === "open" && (
             <button className="btn btn--ghost" onClick={() => navigate(`/jobs/${job._id}/edit`)}>
-              ✏️ Edit Job
+              Edit Job
             </button>
           )}
           {/* Withdraw Job — only for open jobs owned by client */}
@@ -232,11 +256,32 @@ export default function JobDetail() {
               Withdraw Job
             </button>
           )}
+          {canDispute && (
+            <button className="btn btn--danger" onClick={() => setShowDisputeModal(true)}>⚠️ Raise Dispute</button>
+          )}
+
           {canReview && <button className="btn btn--primary" onClick={() => setShowReviewModal(true)}>⭐ Leave Review</button>}
         </div>
       </div>
 
       {actionError && <div className="alert alert--error">{actionError}</div>}
+
+      {dispute && (
+        <div style={{ padding: "1rem 1.25rem", borderRadius: "8px", marginBottom: "1rem", background: dispute.status === "open" ? "rgba(245,158,11,0.08)" : "rgba(16,185,129,0.08)", border: `1px solid ${dispute.status === "open" ? "rgba(245,158,11,0.3)" : "rgba(16,185,129,0.3)"}` }}>
+          <div style={{ fontWeight: 600, marginBottom: "0.25rem" }}>
+            {dispute.status === "open" ? "Dispute Under Review" : "Dispute Resolved"}
+          </div>
+          <div style={{ fontSize: "0.875rem", color: "var(--text-muted)" }}>
+            Raised by {dispute.raisedBy?.name} · {dispute.reason}
+          </div>
+          {dispute.resolution && (
+            <div style={{ fontSize: "0.875rem", marginTop: "0.35rem", color: "#10b981" }}>
+              Resolution: {dispute.resolution.replace(/_/g, " ")}
+              {dispute.adminNote && ` — "${dispute.adminNote}"`}
+            </div>
+          )}
+        </div>
+      )}
 
       {/* Payment Status Banner */}
       {payment && (isClient || isAssignedFreelancer) && (
@@ -296,7 +341,7 @@ export default function JobDetail() {
       {isInChat && (
         <div className="content-card chat-card">
           <div className="chat-header">
-            <h2>💬 Project Chat</h2>
+            <h2>Project Chat</h2>
             <span className={"connection-dot" + (connected ? " connected" : "")}>{connected ? "● Connected" : "● Connecting..."}</span>
           </div>
           <div className="chat-messages">
@@ -349,7 +394,7 @@ export default function JobDetail() {
         <div className="modal-overlay">
           <div className="modal" onClick={(e) => e.stopPropagation()}>
             <div className="modal-header">
-              <h2>💳 Secure Payment</h2>
+              <h2>Secure Payment</h2>
               <button className="modal-close" onClick={() => setShowPaymentModal(false)}>✕</button>
             </div>
             <div style={{ padding: "0 1.75rem" }}>
@@ -366,12 +411,12 @@ export default function JobDetail() {
         <div className="modal-overlay" onClick={() => setShowWithdrawModal(false)}>
           <div className="modal" onClick={(e) => e.stopPropagation()}>
             <div className="modal-header">
-              <h2>⚠️ Withdraw Job</h2>
+              <h2>Withdraw Job</h2>
               <button className="modal-close" onClick={() => setShowWithdrawModal(false)}>✕</button>
             </div>
             <div className="modal-form">
               <div className="cancel-warning">
-                <p>⚠️ This will permanently withdraw this job posting.</p>
+                <p>This will permanently withdraw this job posting.</p>
                 <p>All pending bids will be rejected and freelancers will be notified.</p>
                 <p>This action cannot be undone.</p>
               </div>
@@ -386,18 +431,46 @@ export default function JobDetail() {
         </div>
       )}
 
+      {showDisputeModal && (
+        <div className="modal-overlay" onClick={() => setShowDisputeModal(false)}>
+          <div className="modal" onClick={(e) => e.stopPropagation()}>
+            <div className="modal-header">
+              <h2>Raise a Dispute</h2>
+              <button className="modal-close" onClick={() => setShowDisputeModal(false)}>✕</button>
+            </div>
+            <form onSubmit={handleRaiseDispute} className="modal-form">
+              <div className="cancel-warning">
+                <p>An admin will review your dispute and take appropriate action.</p>
+                <p>Please provide as much detail as possible.</p>
+              </div>
+              <div className="form-group">
+                <label>Reason for dispute *</label>
+                <textarea value={disputeReason} onChange={(e) => setDisputeReason(e.target.value)}
+                  placeholder="Describe the issue in detail..." rows={5} required minLength={20} />
+              </div>
+              <div className="modal-actions">
+                <button type="button" className="btn btn--ghost" onClick={() => setShowDisputeModal(false)}>Cancel</button>
+                <button type="submit" className="btn btn--danger" disabled={disputeLoading || disputeReason.trim().length < 20}>
+                  {disputeLoading ? "Submitting..." : "Submit Dispute"}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
       {/* Cancel Contract Modal */}
       {showCancelModal && (
         <div className="modal-overlay" onClick={() => setShowCancelModal(false)}>
           <div className="modal" onClick={(e) => e.stopPropagation()}>
             <div className="modal-header">
-              <h2>⚠️ Cancel Contract</h2>
+              <h2>Cancel Contract</h2>
               <button className="modal-close" onClick={() => setShowCancelModal(false)}>✕</button>
             </div>
             <form onSubmit={handleCancelContract} className="modal-form">
               <div className="cancel-warning">
-                <p>⚠️ This will cancel the contract and reopen the job for new bids.</p>
-                {payment?.status === "paid" && <p className="cancel-refund-note">💰 Your payment will be refunded.</p>}
+                <p>This will cancel the contract and reopen the job for new bids.</p>
+                {payment?.status === "paid" && <p className="cancel-refund-note">Your payment will be refunded.</p>}
                 <p>The freelancer will be notified with your reason.</p>
               </div>
               <div className="form-group">
@@ -420,7 +493,7 @@ export default function JobDetail() {
       {showReviewModal && (
         <div className="modal-overlay" onClick={() => setShowReviewModal(false)}>
           <div className="modal" onClick={(e) => e.stopPropagation()}>
-            <div className="modal-header"><h2>⭐ Leave a Review</h2><button className="modal-close" onClick={() => setShowReviewModal(false)}>✕</button></div>
+            <div className="modal-header"><h2>Leave a Review</h2><button className="modal-close" onClick={() => setShowReviewModal(false)}>✕</button></div>
             {reviewError && <div className="alert alert--error" style={{ margin: "0 1.75rem" }}>{reviewError}</div>}
             <form onSubmit={handleSubmitReview} className="modal-form">
               <div className="form-group"><label>Rating</label><StarRating rating={reviewForm.rating} onRate={(r) => setReviewForm({ ...reviewForm, rating: r })} size="lg" /></div>

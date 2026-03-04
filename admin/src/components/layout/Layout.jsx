@@ -8,6 +8,7 @@ const navItems = [
   { to: "/payments", icon: "💳", label: "Payments" },
   { to: "/reviews",  icon: "⭐", label: "Reviews" },
   { to: "/analytics",icon: "📈", label: "Analytics" },
+  { to: "/disputes",  icon: "⚠️", label: "Disputes" },
 ];
 
 export default function Layout() {

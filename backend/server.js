@@ -34,17 +34,19 @@ app.use((req, res, next) => {
   next();
 });
 
-app.use('/api/auth',          require('./routes/authRoutes'));
-app.use('/api/jobs',          require('./routes/jobRoutes'));
-app.use('/api/bids',          require('./routes/bidRoutes'));
-app.use('/api/messages',      require('./routes/messageRoutes'));
-app.use('/api/profiles',      require('./routes/profileRoutes'));
-app.use('/api/reviews',       require('./routes/reviewRoutes'));
-app.use('/api/notifications', require('./routes/notificationRoutes'));
-app.use('/api/payments',      require('./routes/paymentRoutes'));
-app.use('/api/admin',         require('./routes/adminRoutes'));
-app.use('/api/analytics',     require('./routes/analyticsRoutes'));
-app.use('/api/earnings',      require('./routes/earningsRoutes'));
+app.use('/api/auth',           require('./routes/authRoutes'));
+app.use('/api/jobs',           require('./routes/jobRoutes'));
+app.use('/api/bids',           require('./routes/bidRoutes'));
+app.use('/api/messages',       require('./routes/messageRoutes'));
+app.use('/api/profiles',       require('./routes/profileRoutes'));
+app.use('/api/reviews',        require('./routes/reviewRoutes'));
+app.use('/api/notifications',  require('./routes/notificationRoutes'));
+app.use('/api/payments',       require('./routes/paymentRoutes'));
+app.use('/api/admin',          require('./routes/adminRoutes'));
+app.use('/api/analytics',      require('./routes/analyticsRoutes'));
+app.use('/api/earnings',       require('./routes/earningsRoutes'));
+app.use('/api/disputes',       require('./routes/disputeRoutes'));
+app.use('/api/admin/disputes', require('./routes/adminDisputeRoutes'));
 
 app.get('/api/health', (req, res) => res.json({ status: 'ok', uptime: process.uptime(), timestamp: new Date() }));
 app.use((req, res) => res.status(404).json({ success: false, message: 'Route not found' }));
