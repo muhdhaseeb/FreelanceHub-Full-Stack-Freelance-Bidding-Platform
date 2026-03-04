@@ -25,23 +25,45 @@ exports.createJob = async (req, res, next) => {
 
 exports.getJobs = async (req, res, next) => {
   try {
-    const { search, budgetMin, budgetMax, sort, page = 1, limit = 10 } = req.query;
+    const { search, budgetMin, budgetMax, sort, status, page = 1, limit = 10 } = req.query;
     const filter = {};
 
-    if (req.user.role === 'client') filter.clientId = req.user._id;
-    else filter.status = 'open';
+    // ── Role-based scoping ───────────────────────────────────────────────────
+    if (req.user.role === 'client') {
+      // Clients only see their own jobs
+      filter.clientId = req.user._id;
+      // Allow filtering by status (all / open / in-progress / completed / cancelled)
+      if (status && status !== 'all') filter.status = status;
+    } else {
+      // Freelancers browse all jobs; default to open unless a status is requested
+      if (status && status !== 'all') {
+        filter.status = status;
+      } else {
+        filter.status = 'open';
+      }
+    }
 
+    // ── Text search ──────────────────────────────────────────────────────────
     if (search) filter.$or = [
       { title:       { $regex: search, $options: 'i' } },
       { description: { $regex: search, $options: 'i' } },
     ];
-    if (budgetMin) filter.budgetMax = { $gte: Number(budgetMin) };
-    if (budgetMax) filter.budgetMin = { $lte: Number(budgetMax) };
 
+    // ── Budget filter (fixed: was previously inverted) ───────────────────────
+    // We want jobs whose budget range overlaps with [budgetMin, budgetMax]:
+    //   job.budgetMax >= userBudgetMin  AND  job.budgetMin <= userBudgetMax
+    if (budgetMin) {
+      filter.budgetMax = { $gte: Number(budgetMin) };
+    }
+    if (budgetMax) {
+      filter.budgetMin = { ...(filter.budgetMin || {}), $lte: Number(budgetMax) };
+    }
+
+    // ── Sort ─────────────────────────────────────────────────────────────────
     const sortMap = {
       newest:      { createdAt: -1 },
       oldest:      { createdAt:  1 },
-      budget_high: { budgetMin: -1 },
+      budget_high: { budgetMax: -1 },
       budget_low:  { budgetMin:  1 },
     };
     const sortObj = sortMap[sort] || { createdAt: -1 };
@@ -72,7 +94,6 @@ exports.getJob = async (req, res, next) => {
   } catch (err) { next(err); }
 };
 
-// ── NEW: Edit Job ─────────────────────────────────────────────────────────────
 exports.editJob = async (req, res, next) => {
   try {
     const job = await Job.findById(req.params.id);
@@ -92,7 +113,6 @@ exports.editJob = async (req, res, next) => {
     if (category)    job.category    = category;
     if (tags)        job.tags        = tags;
 
-    // Validate budget
     if (job.budgetMax < job.budgetMin)
       return res.status(400).json({ success: false, message: 'Max budget must be greater than min budget.' });
 

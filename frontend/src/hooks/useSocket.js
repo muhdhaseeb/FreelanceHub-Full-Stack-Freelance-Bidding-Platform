@@ -27,7 +27,11 @@ export const useSocket = (jobId) => {
     if (socketRef.current && connected) socketRef.current.emit("send-message", { jobId, text });
   };
 
-  return { messages, setMessages, sendMessage, connected, error };
+  const sendFileMessage = (file) => {
+    if (socketRef.current && connected) socketRef.current.emit("send-file-message", { jobId, file });
+  };
+
+  return { messages, setMessages, sendMessage, sendFileMessage, connected, error };
 };
 
 export const useNotificationSocket = (onNotification) => {

@@ -23,12 +23,14 @@ export default function JobsPage() {
   useEffect(() => {
     const fetchJobs = async () => {
       setLoading(true);
+      setError("");
       try {
         const params = { page, limit: 10, sort };
-        if (filter !== "all") params.status = filter;
+        // Always send status — backend handles 'all' by returning everything
+        params.status = filter;
         if (search) params.search = search;
-        if (budgetMin) params.budgetMin = budgetMin;
-        if (budgetMax) params.budgetMax = budgetMax;
+        if (budgetMin) params.budgetMin = Number(budgetMin);
+        if (budgetMax) params.budgetMax = Number(budgetMax);
         const res = await getJobs(params);
         setJobs(res.data.jobs);
         setPagination({ total: res.data.total, pages: res.data.pages });
@@ -39,14 +41,22 @@ export default function JobsPage() {
   }, [filter, page, search, budgetMin, budgetMax, sort]);
 
   const handleSearch = (e) => { e.preventDefault(); setSearch(searchInput); setPage(1); };
-  const clearFilters = () => { setSearch(""); setSearchInput(""); setBudgetMin(""); setBudgetMax(""); setSort("newest"); setPage(1); };
+  const clearFilters = () => {
+    setSearch(""); setSearchInput(""); setBudgetMin(""); setBudgetMax("");
+    setSort("newest"); setFilter("open"); setPage(1);
+  };
+
+  // Status tabs — clients see all their job statuses; freelancers browse open jobs by default
+  const statusTabs = user.role === "client"
+    ? ["all", "open", "in-progress", "completed", "cancelled"]
+    : ["open", "in-progress", "completed"];
 
   return (
     <div className="jobs-page">
       <div className="page-header">
         <div>
           <h1>{user.role === "client" ? "My Jobs" : "Browse Jobs"}</h1>
-          <p className="text-muted">{pagination.total || 0} jobs found</p>
+          <p className="text-muted">{pagination.total ?? 0} jobs found</p>
         </div>
         {user.role === "client" && <Link to="/jobs/create" className="btn btn--primary">+ Post Job</Link>}
       </div>
@@ -72,11 +82,19 @@ export default function JobsPage() {
           <div className="filters-row">
             <div className="form-group">
               <label>Min Budget ($)</label>
-              <input type="number" min="0" value={budgetMin} onChange={(e) => { setBudgetMin(e.target.value); setPage(1); }} placeholder="0" />
+              <input
+                type="number" min="0" value={budgetMin}
+                onChange={(e) => { setBudgetMin(e.target.value); setPage(1); }}
+                placeholder="0"
+              />
             </div>
             <div className="form-group">
               <label>Max Budget ($)</label>
-              <input type="number" min="0" value={budgetMax} onChange={(e) => { setBudgetMax(e.target.value); setPage(1); }} placeholder="Any" />
+              <input
+                type="number" min="0" value={budgetMax}
+                onChange={(e) => { setBudgetMax(e.target.value); setPage(1); }}
+                placeholder="Any"
+              />
             </div>
             <div className="form-group">
               <label>Sort By</label>
@@ -87,7 +105,13 @@ export default function JobsPage() {
                 <option value="budget_high">Budget: High to Low</option>
               </select>
             </div>
-            <button type="button" onClick={clearFilters} className="btn btn--ghost btn--sm" style={{ alignSelf: 'flex-end', marginBottom: '1.25rem' }}>Clear All</button>
+            <button
+              type="button" onClick={clearFilters}
+              className="btn btn--ghost btn--sm"
+              style={{ alignSelf: "flex-end", marginBottom: "1.25rem" }}
+            >
+              Clear All
+            </button>
           </div>
         </div>
       )}
@@ -95,15 +119,20 @@ export default function JobsPage() {
       {/* Active filter tags */}
       {(search || budgetMin || budgetMax) && (
         <div className="active-filters">
-          {search && <span className="filter-tag">Search: "{search}" <button onClick={() => { setSearch(""); setSearchInput(""); }}>×</button></span>}
-          {budgetMin && <span className="filter-tag">Min: ${budgetMin} <button onClick={() => setBudgetMin("")}>×</button></span>}
-          {budgetMax && <span className="filter-tag">Max: ${budgetMax} <button onClick={() => setBudgetMax("")}>×</button></span>}
+          {search    && <span className="filter-tag">Search: "{search}" <button onClick={() => { setSearch(""); setSearchInput(""); setPage(1); }}>×</button></span>}
+          {budgetMin && <span className="filter-tag">Min: ${budgetMin} <button onClick={() => { setBudgetMin(""); setPage(1); }}>×</button></span>}
+          {budgetMax && <span className="filter-tag">Max: ${budgetMax} <button onClick={() => { setBudgetMax(""); setPage(1); }}>×</button></span>}
         </div>
       )}
 
+      {/* Status filter tabs */}
       <div className="filter-bar">
-        {["all", "open", "in-progress", "completed"].map((s) => (
-          <button key={s} className={"filter-btn" + (filter === s ? " filter-btn--active" : "")} onClick={() => { setFilter(s); setPage(1); }}>
+        {statusTabs.map((s) => (
+          <button
+            key={s}
+            className={"filter-btn" + (filter === s ? " filter-btn--active" : "")}
+            onClick={() => { setFilter(s); setPage(1); }}
+          >
             {s === "all" ? "All" : s.charAt(0).toUpperCase() + s.slice(1).replace("-", " ")}
           </button>
         ))}
@@ -122,13 +151,20 @@ export default function JobsPage() {
                 </div>
                 <p className="job-description">{job.description.substring(0, 120)}...</p>
                 <div className="job-card-footer">
-                  <div className="job-budget"><span className="budget-label">Budget</span><span className="budget-value">${job.budgetMin} – ${job.budgetMax}</span></div>
-                  <div className="job-deadline"><span className="deadline-label">Deadline </span><span>{new Date(job.deadline).toLocaleDateString()}</span></div>
+                  <div className="job-budget">
+                    <span className="budget-label">Budget</span>
+                    <span className="budget-value">${job.budgetMin} – ${job.budgetMax}</span>
+                  </div>
+                  <div className="job-deadline">
+                    <span className="deadline-label">Deadline </span>
+                    <span>{new Date(job.deadline).toLocaleDateString()}</span>
+                  </div>
                   <div className="job-client"><span>by {job.clientId?.name}</span></div>
                 </div>
               </Link>
             ))}
           </div>
+
           {jobs.length === 0 && (
             <div className="empty-state-large">
               <div className="empty-icon">📭</div>
@@ -136,6 +172,7 @@ export default function JobsPage() {
               <p>Try adjusting your search or filters</p>
             </div>
           )}
+
           {pagination.pages > 1 && (
             <div className="pagination">
               <button disabled={page === 1} onClick={() => setPage(p => p - 1)} className="btn btn--ghost">← Prev</button>

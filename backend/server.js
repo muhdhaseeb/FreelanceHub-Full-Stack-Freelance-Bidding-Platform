@@ -47,6 +47,7 @@ app.use('/api/analytics',      require('./routes/analyticsRoutes'));
 app.use('/api/earnings',       require('./routes/earningsRoutes'));
 app.use('/api/disputes',       require('./routes/disputeRoutes'));
 app.use('/api/admin/disputes', require('./routes/adminDisputeRoutes'));
+app.use('/api/upload',         require('./routes/uploadRoutes'));
 
 app.get('/api/health', (req, res) => res.json({ status: 'ok', uptime: process.uptime(), timestamp: new Date() }));
 app.use((req, res) => res.status(404).json({ success: false, message: 'Route not found' }));
